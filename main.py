@@ -42,6 +42,7 @@ def init_array(num_nodes):
 # 動的計画法の実施
 def dynamic_programming(adj, num_nodes):
     dp_table = init_array(num_nodes)
+    route_hist = init_array(num_nodes)
 
     for i in range(num_nodes):
         dp_table[1 << i][i] = 0.0
@@ -59,41 +60,30 @@ def dynamic_programming(adj, num_nodes):
 
                     if new_dist > dp_table[new_row][new_col]:
                         dp_table[new_row][new_col] = new_dist
+                        route_hist[new_row][new_col] = col
 
-    return dp_table
-
+    return dp_table, route_hist
 
 if __name__ == "__main__":
-    adj, id_to_idx, idx_to_id, num_nodes = data_reading()
+    compliant_input = data_reading()
+    idx_to_station = linkage_idx_station(compliant_input)
+    station_to_idx = linkage_station_idx(idx_to_station)
+    num_nodes = len(idx_to_station)
+    adj_matrix = create_adjacent_matrix(num_nodes, compliant_input, station_to_idx)
+    dp_table, parent = dynamic_programming(adj_matrix, num_nodes)
 
-    print(adj)
-    print(id_to_idx)
-    print(idx_to_id)
-    print(num_nodes)    if __name__ == "__main__":
-        # 1. データの読み込み
-        compliant_input = data_reading()
-    
-        # 2. ノードの情報を整理し、IDとインデックスの対応を作成
-        idx_to_station = linkage_idx_station(compliant_input)
-        station_to_idx = linkage_station_idx(idx_to_station)
-        num_nodes = len(idx_to_station)
-    
-        # 3. 隣接行列を作成
-        #    注意: 現在のcreate_adjacent_matrixは内部で再度data_readingを呼び出します。
-        #    また、引数num_nodesを正しく使用していません。
-        #    ここでは、既存の関数の動作を前提として呼び出します。
-        adj_matrix = create_adjacent_matrix(num_nodes)
-    
-        # 4. 動的計画法でDPテーブルを計算
-        #    注意: dynamic_programmingは引数adjを受け取りますが、内部で未使用です。
-        dp_table = dynamic_programming(adj_matrix, num_nodes)
-    
-        # 5. DPテーブルの中から最大値（最長経路長）を探す
-        max_dist = 0.0
-        for row in dp_table:
-            for dist in row:
-                if dist > max_dist:
-                    max_dist = dist
-        
-        # 6. 結果の出力
-        print(max_dist)
+    # 最大取得
+    final_mask, end_node_idx = max(
+        ((mask, i) for mask in range(1, 1 << num_nodes) for i in range(num_nodes)),
+        key=lambda item: dp_table[item[0]][item[1]]
+    )
+
+    # 復元
+    path = []
+    while end_node_idx != -1:
+        path.append(str(int(idx_to_station[end_node_idx])))
+        prev_node = parent[final_mask][end_node_idx]
+        final_mask ^= (1 << end_node_idx)
+        end_node_idx = prev_node
+
+    print("\r\n".join(path[::-1]))
