@@ -2,4 +2,5 @@ services:
   app:
     build:
       context: .
-      dockerfile: Containerfile
+    volumes:
+      - .:/app
